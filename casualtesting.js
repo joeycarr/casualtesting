@@ -9,7 +9,8 @@ export const log = {
 };
 
 // We only raise TestErrors when tests fail. Normal Error instances represent a
-// flaw in the test framework or the test code.
+// flaw in the test framework or the test code. TestErrors are always trapped
+// by the test and testasync functions.
 class TestError extends Error { }
 
 /**
@@ -171,7 +172,7 @@ class Expectation {
 
     isInstanceOf(type) {
         if(!(this.value instanceof type)) {
-            throw new TestError(`Expected value is instance of "${this.value.constructor.name}", but expected ${type.name}`);
+            throw new TestError(`Expected value is instance of "${this.value.constructor.name}", but expected "${type.name}"`);
         }
         return this;
     }
