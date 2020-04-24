@@ -1,7 +1,3 @@
-var asynctests = new Array();
-var attempts = 0;
-var passed = 0;
-var failed = 0;
 
 export const log = {
     info: console.log,
@@ -20,13 +16,15 @@ class TestError extends Error { }
  * @param {function} fn - The test case itself.
  */
 export const test = (label, fn) => {
-    attempts++;
+    const meta = currentsuite;
+
+    meta.attempts++;
     try {
         fn();
-        passed++;
+        meta.passed++;
         log.info(`\tPASS:\t${label}`);
     } catch(error) {
-        failed++;
+        meta.failed++;
         if(error instanceof TestError) {
             log.error(`\tFAIL:\t${label}`);
             log.error(error);
@@ -46,15 +44,17 @@ export const test = (label, fn) => {
  * declared async or it should return a Promise.
  */
 export const testasync = (label, asyncfn) => {
-    attempts++;
+    const meta = currentsuite;
+
+    meta.attempts++;
     var promise = asyncfn();
     asynctests.push(promise);
     promise.then(() => {
-        passed++;
+        meta.passed++;
         log.info(`\tPASS:\t${label}`)
     });
     promise.catch((error) => {
-        failed++;
+        meta.failed++;
         if(error instanceof TestError) {
             log.error(`\tFAIL:\t${label}`);
             log.error(error);
@@ -66,6 +66,10 @@ export const testasync = (label, asyncfn) => {
     });
 }
 
+// This is a module private variable used for coordinating counting between
+// the test cases and the suite wrapper function.
+var currentsuite;
+
 /**
  * Execute a suite of tests and report the results. Individual tests can be run
  * outside of a suite, but they won't contribute to reported counts of attempts,
@@ -76,18 +80,22 @@ export const testasync = (label, asyncfn) => {
  * the test and testasync functions.
  */
 export const suite = async (label, fn) => {
-    asynctests = new Array();
-    attempts = 0;
-    passed = 0;
-    failed = 0;
+    currentsuite = {
+        asynctests: new Array(),
+        attempts: 0,
+        passed: 0,
+        failed: 0
+    };
 
-    log.info(`Starting "${label}" suite`)
+    log.info(`Starting "${label}" suite`);
 
     fn();
 
-    await Promise.allSettled(asynctests);
+    const meta = currentsuite;
+
+    await Promise.allSettled(meta.asynctests);
     log.info(`Results for "${label}" suite`);
-    log.info(`${passed}/${attempts} tests passed. ${failed} tests failed`);
+    log.info(`${meta.passed}/${meta.attempts} tests passed. ${meta.failed} tests failed`);
 }
 
 // ---------
