@@ -8,6 +8,10 @@ export const log = {
     error: console.error
 };
 
+// We only raise TestErrors when tests fail. Normal Error instances represent a
+// flaw in the test framework or the test code.
+class TestError extends Error { }
+
 /**
  * Execute one test case.
  * @param {string} label - The label for the test to indicate success or failure
@@ -19,12 +23,17 @@ export const test = (label, fn) => {
     try {
         fn();
         passed++;
-        log.info(`PASS:\t${label}`);
-    } catch(exception) {
+        log.info(`\tPASS:\t${label}`);
+    } catch(error) {
         failed++;
-        log.error(`FAIL:\t${label}`);
-        log.error(exception);
-    }
+        if(error instanceof TestError) {
+            log.error(`\tFAIL:\t${label}`);
+            log.error(error);
+        } else {
+            log.error(`\tTEST CODE FAILURE:\t${label}`);
+            log.info('\tThis test failed due to an unexpected bug or a flaw in the test code, not due to a failed test expectation.')
+            log.error(error);
+        }    }
 }
 
 /**
@@ -40,12 +49,18 @@ export const testasync = (label, asyncfn) => {
     asynctests.push(promise);
     promise.then(() => {
         passed++;
-        log.info(`PASS:\t${label}`)
+        log.info(`\tPASS:\t${label}`)
     });
-    promise.catch((exception) => {
+    promise.catch((error) => {
         failed++;
-        log.error(`FAIL:\t${label}`);
-        log.error(exception);
+        if(error instanceof TestError) {
+            log.error(`\tFAIL:\t${label}`);
+            log.error(error);
+        } else {
+            log.error(`\tTEST CODE FAILURE:\t${label}`);
+            log.info('\tThis test failed due to an unexpected bug or a flaw in the test code, not due to a failed test expectation.')
+            log.error(error);
+        }
     });
 }
 
@@ -58,18 +73,18 @@ export const testasync = (label, asyncfn) => {
  * @param {function} fn - A wrapper function around all the individual calls to
  * the test and testasync functions.
  */
-export const suite = (label, fn) => {
+export const suite = async (label, fn) => {
     asynctests = new Array();
     attempts = 0;
     passed = 0;
     failed = 0;
 
-    log.info(`Starting ${label}`)
+    log.info(`Starting "${label}" suite`)
 
     fn();
 
     await Promise.allSettled(asynctests);
-    log.info(`Results for ${label}`);
+    log.info(`Results for "${label}" suite`);
     log.info(`${passed}/${attempts} tests passed. ${failed} tests failed`);
 }
 
@@ -142,21 +157,21 @@ class Expectation {
 
     equals(other) {
         if(this.value != other) {
-            throw new Error(`${this.value} != ${other}`);
+            throw new TestError(`${this.value} != ${other}`);
         }
         return this;
     }
 
     is(other) {
         if(this.value !== other) {
-            throw new Error(`${this.value} !== ${other}`);
+            throw new TestError(`${this.value} !== ${other}`);
         }
         return this;
     }
 
     isInstanceOf(type) {
         if(!(this.value instanceof type)) {
-            throw new Error(`Expected value is instance of "${this.value.constructor.name}", but expected ${type.name}`);
+            throw new TestError(`Expected value is instance of "${this.value.constructor.name}", but expected ${type.name}`);
         }
         return this;
     }
@@ -165,19 +180,19 @@ class Expectation {
 class FunctionExpectation extends Expectation {
     typecheck() {
         if(typeof(this.value) != 'function')
-            throw new Error(`The value, "${this.value}", is not a function`);
+            throw new TestError(`The value, "${this.value}", is not a function`);
     }
 
     toThrow(ExpectedError=Error) {
         try {
             this.value();
-            throw new UnexpectedError('Expected function to throw an error.')
+            throw new TestError('Expected function to throw an error, but it did not.')
         } catch(error) {
-            if(error instanceof UnexpectedError) {
+            if(error instanceof TestError) {
                 throw error;
             }
             if(!(error instanceof ExpectedError)) {
-                throw new Error(`Expected an exception of type ${type.name}, but caught an error with type ${error.constructor.name}`)
+                throw new TestError(`Expected an exception of type ${type.name}, but caught an error with type ${error.constructor.name}`)
             }
         }
         return this;
@@ -189,7 +204,7 @@ class MasqueExpectation extends FunctionExpectation {
     typecheck() {
         super.typecheck();
         if(this.value.sigil != masque.sigil)
-            throw new Error(
+            throw new TestError(
                 `The value, "${this.value}", is not a masque function`);
         return this;
     }
@@ -197,21 +212,21 @@ class MasqueExpectation extends FunctionExpectation {
     wasCalled() {
         this.typecheck();
         if(this.value(masque.memos).length < 1)
-            throw new Error('The function was never called.');
+            throw new TestError('The function was never called.');
         return this;
     }
 
     wasCalledOnce() {
         this.typecheck();
         if(this.value(masque.memos).length != 1)
-            throw new Error('The function should have been called one time.');
+            throw new TestError('The function should have been called one time.');
         return this;
     }
 
     wasNotCalled() {
         this.typecheck();
         if(this.value(masque.memos).length > 0)
-            throw new Error('The function should not have been called.')
+            throw new TestError('The function should not have been called.')
         return this;
     }
 
@@ -219,16 +234,16 @@ class MasqueExpectation extends FunctionExpectation {
         this.typecheck();
         var memos = this.value(masque.memos);
         if(memos.length < 1) {
-            throw new Error('The function was never called.');
+            throw new TestError('The function was never called.');
         }
         var last = memos.pop();
         if(args.length != last.args.length) {
-            throw new Error(`Argument list lengths to not match: got ${JSON.stringify(last.args)} but expected ${JSON.stringify(args)}`);
+            throw new TestError(`Argument list lengths to not match: got ${JSON.stringify(last.args)} but expected ${JSON.stringify(args)}`);
         }
         var len = args.length;
         for(let i=0; i<len; i++) {
             if(last.args[i] != args[i]) {
-                throw new Error(`Argument value at index ${i} does not match: got ${JSON.stringify(last.args)} but expected ${JSON.stringify(args)}`);
+                throw new TestError(`Argument value at index ${i} does not match: got ${JSON.stringify(last.args)} but expected ${JSON.stringify(args)}`);
             }
         }
         return this;
@@ -243,21 +258,21 @@ class NumericExpectation extends Expectation {
     greaterThan(other) {
         this.typecheck();
         if(this.value <= other)
-            throw new Error(`${this.value} is not greater than ${other}`);
+            throw new TestError(`${this.value} is not greater than ${other}`);
         return this;
     }
 
     lessThan(other) {
         this.typecheck();
         if(this.value >= other)
-            throw new Error(`${this.value} is not less than ${other}`);
+            throw new TestError(`${this.value} is not less than ${other}`);
         return this;
     }
 
     closeTo(other, precision=1e-3) {
         this.typecheck();
         if(Math.abs(this.value - other.value) > precision)
-            throw new Error(`${this.value} and ${other} are different by more than ${precision}`)
+            throw new TestError(`${this.value} and ${other} are different by more than ${precision}`)
         return this;
     }
 }
