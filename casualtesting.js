@@ -34,7 +34,8 @@ export const test = (label, fn) => {
             log.error(`\tTEST CODE FAILURE:\t${label}`);
             log.info('\tThis test failed due to an unexpected bug or a flaw in the test code, not due to a failed test expectation.')
             log.error(error);
-        }    }
+        }
+    }
 }
 
 /**
@@ -256,21 +257,21 @@ class NumericExpectation extends Expectation {
 
     }
 
-    greaterThan(other) {
+    isGreaterThan(other) {
         this.typecheck();
         if(this.value <= other)
             throw new TestError(`${this.value} is not greater than ${other}`);
         return this;
     }
 
-    lessThan(other) {
+    isLessThan(other) {
         this.typecheck();
         if(this.value >= other)
             throw new TestError(`${this.value} is not less than ${other}`);
         return this;
     }
 
-    closeTo(other, precision=1e-3) {
+    isCloseTo(other, precision=1e-3) {
         this.typecheck();
         if(Math.abs(this.value - other.value) > precision)
             throw new TestError(`${this.value} and ${other} are different by more than ${precision}`)
