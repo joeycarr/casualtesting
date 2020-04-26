@@ -22,16 +22,16 @@ export const test = (label, fn) => {
     try {
         fn();
         meta.passed++;
-        log.info(`\tPASS:\t${label}`);
+        meta.info(`\tPASS:\t${label}`);
     } catch(error) {
         meta.failed++;
         if(error instanceof TestError) {
-            log.error(`\tFAIL:\t${label}`);
-            log.error(error);
+            meta.error(`\tFAIL:\t${label}`);
+            meta.error(error);
         } else {
-            log.error(`\tTEST CODE FAILURE:\t${label}`);
-            log.info('\tThis test failed due to an unexpected bug or a flaw in the test code, not due to a failed test expectation.')
-            log.error(error);
+            meta.error(`\tTEST CODE FAILURE:\t${label}`);
+            meta.info('\tThis test failed due to an unexpected bug or a flaw in the test code, not due to a failed test expectation.')
+            meta.error(error);
         }
     }
 }
@@ -51,17 +51,17 @@ export const testasync = (label, asyncfn) => {
     asynctests.push(promise);
     promise.then(() => {
         meta.passed++;
-        log.info(`\tPASS:\t${label}`)
+        meta.info(`\tPASS:\t${label}`)
     });
     promise.catch((error) => {
         meta.failed++;
         if(error instanceof TestError) {
-            log.error(`\tFAIL:\t${label}`);
-            log.error(error);
+            meta.error(`\tFAIL:\t${label}`);
+            meta.error(error);
         } else {
-            log.error(`\tTEST CODE FAILURE:\t${label}`);
-            log.info('\tThis test failed due to an unexpected bug or a flaw in the test code, not due to a failed test expectation.')
-            log.error(error);
+            meta.error(`\tTEST CODE FAILURE:\t${label}`);
+            meta.info('\tThis test failed due to an unexpected bug or a flaw in the test code, not due to a failed test expectation.')
+            meta.error(error);
         }
     });
 }
@@ -69,6 +69,31 @@ export const testasync = (label, asyncfn) => {
 // This is a module private variable used for coordinating counting between
 // the test cases and the suite wrapper function.
 var currentsuite;
+
+class Suite {
+    constructor() {
+        this.asynctests = new Array();
+        this.attempts = 0;
+        this.passed = 0;
+        this.failed = 0;
+
+        this.messages = new Array();
+    }
+
+    info(...args) {
+        this.messages.push({type: "info", "args": args});
+    }
+
+    error(...args) {
+        this.messages.push({type: "error", "args": args});
+    }
+
+    report() {
+        for(let {type, args} of this.messages) {
+            console[type](...args);
+        }
+    }
+}
 
 /**
  * Execute a suite of tests and report the results. Individual tests can be run
@@ -80,22 +105,17 @@ var currentsuite;
  * the test and testasync functions.
  */
 export const suite = async (label, fn) => {
-    currentsuite = {
-        asynctests: new Array(),
-        attempts: 0,
-        passed: 0,
-        failed: 0
-    };
+    const meta = currentsuite = new Suite();
 
-    log.info(`Starting "${label}" suite`);
+    meta.info(`Starting "${label}" suite`);
 
     fn();
 
-    const meta = currentsuite;
-
     await Promise.allSettled(meta.asynctests);
-    log.info(`Results for "${label}" suite`);
-    log.info(`${meta.passed}/${meta.attempts} tests passed. ${meta.failed} tests failed`);
+    meta.info(`Results for "${label}" suite`);
+    meta.info(`${meta.passed}/${meta.attempts} tests passed. ${meta.failed} tests failed`);
+    meta.info("---------------");
+    meta.report();
 }
 
 // ---------
