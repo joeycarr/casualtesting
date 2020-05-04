@@ -24,6 +24,14 @@ suite("Basic expectations", () => {
 
 });
 
+suite("Array Expectations", () => {
+
+    test("All Equal", () => {
+        expect(['a', 'b', 'c']).allEqual(['a', 'b', 'c']);
+        expect([1, 2, 3]).allEqual([1, 2, 3]);
+    })
+})
+
 suite("Numeric Expectations", () => {
 
     test("Greater Than", () => {

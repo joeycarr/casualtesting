@@ -175,6 +175,10 @@ export const expect = (value) => {
                 return new MasqueExpectation(value);
             else
                 return new FunctionExpectation(value);
+        case "object":
+            if(value instanceof Array)
+                return new ArrayExpectation(value);
+            // otherwise we fall through to the default case
         default:
             return new Expectation(value);
     }
@@ -207,10 +211,34 @@ class Expectation {
     }
 }
 
+class ArrayExpectation extends Expectation {
+    typecheck(other) {
+        if(! (other instanceof Array)) {
+            throw new Error(`The value "${other}" is not an Array`);
+        }
+    }
+
+    allEqual(other) {
+        this.typecheck(other);
+
+        if(this.value.length != other.length) {
+            throw new TestError(`The arrays have different lengths; expected an array of length ${other.length} but found an array of length ${this.value.length}`);
+        }
+        const len = this.value.length;
+        for(let i=0; i < len; i++) {
+            let a = this.value[i];
+            let b = other[i];
+            if( a != b ) {
+                throw new TestError(`The array values differ at index ${i} (${a} != ${b})`);
+            }
+        }
+    }
+}
+
 class FunctionExpectation extends Expectation {
     typecheck() {
         if(typeof(this.value) != 'function')
-            throw new TestError(`The value, "${this.value}", is not a function`);
+            throw new Error(`The value, "${this.value}", is not a function`);
     }
 
     toThrow(ExpectedError=Error) {
@@ -234,7 +262,7 @@ class MasqueExpectation extends FunctionExpectation {
     typecheck() {
         super.typecheck();
         if(this.value.sigil != masque.sigil)
-            throw new TestError(
+            throw new Error(
                 `The value, "${this.value}", is not a masque function`);
         return this;
     }
@@ -281,26 +309,27 @@ class MasqueExpectation extends FunctionExpectation {
 }
 
 class NumericExpectation extends Expectation {
-    typecheck() {
-
+    typecheck(other) {
+        if(typeof(other) != 'number')
+            throw new Error(`The argument, "${other}", is not a number and can't be compared with the value of the expectation`);
     }
 
     isGreaterThan(other) {
-        this.typecheck();
+        this.typecheck(other);
         if(this.value <= other)
             throw new TestError(`${this.value} is not greater than ${other}`);
         return this;
     }
 
     isLessThan(other) {
-        this.typecheck();
+        this.typecheck(other);
         if(this.value >= other)
             throw new TestError(`${this.value} is not less than ${other}`);
         return this;
     }
 
     isCloseTo(other, precision=1e-3) {
-        this.typecheck();
+        this.typecheck(other);
         if(Math.abs(this.value - other.value) > precision)
             throw new TestError(`${this.value} and ${other} are different by more than ${precision}`)
         return this;
