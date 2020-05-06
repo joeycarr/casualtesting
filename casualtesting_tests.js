@@ -95,3 +95,14 @@ suite("Masque Expectations", () => {
         expect(x).lastCalledWithArgs('a', 10);
     });
 });
+
+suite("Async Tests", () => {
+
+    testasync("Timeout", async () => {
+        var fn = async () => {
+            return true;
+        }
+
+        expect(await fn()).is(true);
+    });
+})

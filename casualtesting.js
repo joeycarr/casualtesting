@@ -48,7 +48,7 @@ export const testasync = (label, asyncfn) => {
 
     meta.attempts++;
     var promise = asyncfn();
-    asynctests.push(promise);
+    meta.asynctests.push(promise);
     promise.then(() => {
         meta.passed++;
         meta.info(`\tPASS:\t${label}`)
