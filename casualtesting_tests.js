@@ -106,3 +106,11 @@ suite("Async Tests", () => {
         expect(await fn()).is(true);
     });
 })
+
+suite("Set Expectations", () => {
+
+    test("Has", () => {
+        var x = new Set('a');
+        expect(x).has('a');
+    })
+});

@@ -178,6 +178,8 @@ export const expect = (value) => {
         case "object":
             if(value instanceof Array)
                 return new ArrayExpectation(value);
+            if(value instanceof Set)
+                return new SetExpectation(value);
             // otherwise we fall through to the default case
         default:
             return new Expectation(value);
@@ -333,5 +335,18 @@ class NumericExpectation extends Expectation {
         if(Math.abs(this.value - other.value) > precision)
             throw new TestError(`${this.value} and ${other} are different by more than ${precision}`)
         return this;
+    }
+}
+
+class SetExpectation extends Expectation {
+    typecheck(other) {
+        if(! (other instanceof Set)) {
+            throw new Error(`The argument, "${other}", is not a Set.`);
+        }
+    }
+
+    has(item) {
+        if(! this.value.has(item))
+            throw new TestError(`Set does not include ${item}`);
     }
 }
