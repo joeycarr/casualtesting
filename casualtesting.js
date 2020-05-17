@@ -205,6 +205,13 @@ class Expectation {
         return this;
     }
 
+    isNot(other) {
+        if(this.value === other) {
+            throw new TestError(`${this.value} === ${other}`);
+        }
+        return this;
+    }
+
     isInstanceOf(type) {
         if(!(this.value instanceof type)) {
             throw new TestError(`Expected value is instance of "${this.value.constructor.name}", but expected "${type.name}"`);
