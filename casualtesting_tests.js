@@ -15,11 +15,23 @@ suite("Basic expectations", () => {
         expect(undefined).is(undefined);
     });
 
+    test("Inequality", () => {
+        expect(2).isNot(3);
+        expect("a").isNot("b");
+        expect(true).isNot(false);
+        expect(null).isNot(undefined);
+    })
+
     test("Instance Of", () => {
         expect({"key": "value"}).isInstanceOf(Object);
         expect(['a', 'b', 'c']).isInstanceOf(Object);
         expect(['a', 'b', 'c']).isInstanceOf(Array);
         expect(new Error).isInstanceOf(Error);
+    });
+
+    test("Yields", () => {
+        expect("abc").yields(3);
+        expect(new Array(99)).yields(99);
     });
 
 });

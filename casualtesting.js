@@ -7,7 +7,7 @@ export const log = {
 // We only raise TestErrors when tests fail. Normal Error instances represent a
 // flaw in the test framework or the test code. TestErrors are always trapped
 // by the test and testasync functions.
-class TestError extends Error { }
+export class TestError extends Error { }
 
 /**
  * Execute one test case.
@@ -217,6 +217,15 @@ class Expectation {
             throw new TestError(`Expected value is instance of "${this.value.constructor.name}", but expected "${type.name}"`);
         }
         return this;
+    }
+
+    yields(count) {
+        let i = 0;
+        for(let item of this.value) {
+            if(i > count) throw new TestError(`Value yielded more than ${count} items.`);
+            i++;
+        }
+        if(i < count) throw new TestError(`Value yielded only ${i} items of an expected ${count}`);
     }
 }
 
