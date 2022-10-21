@@ -209,7 +209,7 @@ class Expectation {
         if(this.value === other) {
             throw new TestError(`${this.value} === ${other}`);
         }
-        return this
+        return this;
     }
 
     isInstanceOf(type) {
@@ -348,7 +348,7 @@ class NumericExpectation extends Expectation {
 
     isCloseTo(other, precision=1e-3) {
         this.typecheck(other);
-        if(Math.abs(this.value - other.value) > precision)
+        if(Math.abs(this.value - other) > precision)
             throw new TestError(`${this.value} and ${other} are different by more than ${precision}`)
         return this;
     }
